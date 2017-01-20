@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2ac44ab6-6b49-4113-a04f-653576622f3d" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Command/CheckCommand.php" afterPath="$PROJECT_DIR$/Command/CheckCommand.php" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Service/Mailer.php" afterPath="$PROJECT_DIR$/Service/Mailer.php" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -20,8 +19,8 @@
       <file leaf-file-name="CheckCommand.php" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Command/CheckCommand.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="598">
-              <caret line="75" column="21" lean-forward="true" selection-start-line="75" selection-start-column="21" selection-end-line="75" selection-end-column="21" />
+            <state relative-caret-position="395">
+              <caret line="59" column="0" lean-forward="false" selection-start-line="59" selection-start-column="0" selection-end-line="64" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -40,8 +39,8 @@
       <file leaf-file-name="Mailer.php" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Service/Mailer.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="886">
-              <caret line="102" column="38" lean-forward="true" selection-start-line="102" selection-start-column="38" selection-end-line="102" selection-end-column="38" />
+            <state relative-caret-position="770">
+              <caret line="95" column="0" lean-forward="false" selection-start-line="95" selection-start-column="0" selection-end-line="95" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -249,12 +248,12 @@
       <workItem from="1484055195566" duration="1151000" />
       <workItem from="1484755900876" duration="87000" />
       <workItem from="1484756270865" duration="708000" />
-      <workItem from="1484921727233" duration="4260000" />
+      <workItem from="1484921727233" duration="4895000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="6206000" />
+    <option name="totallyTimeSpent" value="6841000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="26" width="1096" height="1837" extended-state="6" />
@@ -339,8 +338,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Command/CheckCommand.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="598">
-          <caret line="75" column="21" lean-forward="true" selection-start-line="75" selection-start-column="21" selection-end-line="75" selection-end-column="21" />
+        <state relative-caret-position="395">
+          <caret line="59" column="0" lean-forward="false" selection-start-line="59" selection-start-column="0" selection-end-line="64" selection-end-column="0" />
           <folding />
         </state>
       </provider>
@@ -355,8 +354,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Service/Mailer.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="886">
-          <caret line="102" column="38" lean-forward="true" selection-start-line="102" selection-start-column="38" selection-end-line="102" selection-end-column="38" />
+        <state relative-caret-position="770">
+          <caret line="95" column="0" lean-forward="false" selection-start-line="95" selection-start-column="0" selection-end-line="95" selection-end-column="0" />
           <folding />
         </state>
       </provider>

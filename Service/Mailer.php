@@ -91,10 +91,12 @@ class Mailer {
                     $this->container->get('nti.logger')->logError("Unable to find file in temporary spool...");
                 }
             }
-            $filename = $files[0]; // SORT_ASC will guarantee .. and . are at the bottom
+            $filename = null;
 
-            if($filename == "." || $filename == "..") {
-                $filename = null; // File hasn't been created yet
+            foreach($files as $file) {
+                if ($file == "." || $file == "..") continue;
+                $filename = $file;
+                break;
             }
 
             // Copy the file
