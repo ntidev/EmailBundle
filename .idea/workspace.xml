@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="2ac44ab6-6b49-4113-a04f-653576622f3d" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Command/CheckCommand.php" afterPath="$PROJECT_DIR$/Command/CheckCommand.php" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Entity/Email.php" afterPath="$PROJECT_DIR$/Entity/Email.php" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Service/Mailer.php" afterPath="$PROJECT_DIR$/Service/Mailer.php" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -18,11 +17,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="CheckCommand.php" pinned="false" current-in-tab="true">
+      <file leaf-file-name="CheckCommand.php" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Command/CheckCommand.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1073">
-              <caret line="76" column="21" lean-forward="true" selection-start-line="76" selection-start-column="21" selection-end-line="76" selection-end-column="21" />
+            <state relative-caret-position="598">
+              <caret line="75" column="21" lean-forward="true" selection-start-line="75" selection-start-column="21" selection-end-line="75" selection-end-column="21" />
               <folding />
             </state>
           </provider>
@@ -32,17 +31,17 @@
         <entry file="file://$PROJECT_DIR$/Entity/Email.php">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="551">
-              <caret line="19" column="31" lean-forward="true" selection-start-line="19" selection-start-column="31" selection-end-line="19" selection-end-column="31" />
+              <caret line="19" column="31" lean-forward="false" selection-start-line="19" selection-start-column="31" selection-end-line="19" selection-end-column="31" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Mailer.php" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Mailer.php" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Service/Mailer.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="857">
-              <caret line="125" column="30" lean-forward="false" selection-start-line="125" selection-start-column="0" selection-end-line="126" selection-end-column="0" />
+            <state relative-caret-position="886">
+              <caret line="102" column="38" lean-forward="true" selection-start-line="102" selection-start-column="38" selection-end-line="102" selection-end-column="38" />
               <folding />
             </state>
           </provider>
@@ -66,8 +65,8 @@
         <option value="$PROJECT_DIR$/composer.json" />
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/Entity/Email.php" />
-        <option value="$PROJECT_DIR$/Service/Mailer.php" />
         <option value="$PROJECT_DIR$/Command/CheckCommand.php" />
+        <option value="$PROJECT_DIR$/Service/Mailer.php" />
       </list>
     </option>
   </component>
@@ -250,12 +249,12 @@
       <workItem from="1484055195566" duration="1151000" />
       <workItem from="1484755900876" duration="87000" />
       <workItem from="1484756270865" duration="708000" />
-      <workItem from="1484921727233" duration="3024000" />
+      <workItem from="1484921727233" duration="4260000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="4970000" />
+    <option name="totallyTimeSpent" value="6206000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="26" width="1096" height="1837" extended-state="6" />
@@ -338,26 +337,26 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Command/CheckCommand.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="598">
+          <caret line="75" column="21" lean-forward="true" selection-start-line="75" selection-start-column="21" selection-end-line="75" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Entity/Email.php">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="551">
-          <caret line="19" column="31" lean-forward="true" selection-start-line="19" selection-start-column="31" selection-end-line="19" selection-end-column="31" />
+          <caret line="19" column="31" lean-forward="false" selection-start-line="19" selection-start-column="31" selection-end-line="19" selection-end-column="31" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/Service/Mailer.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="857">
-          <caret line="125" column="30" lean-forward="false" selection-start-line="125" selection-start-column="0" selection-end-line="126" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Command/CheckCommand.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1073">
-          <caret line="76" column="21" lean-forward="true" selection-start-line="76" selection-start-column="21" selection-end-line="76" selection-end-column="21" />
+        <state relative-caret-position="886">
+          <caret line="102" column="38" lean-forward="true" selection-start-line="102" selection-start-column="38" selection-end-line="102" selection-end-column="38" />
           <folding />
         </state>
       </provider>

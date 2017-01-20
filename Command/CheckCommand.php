@@ -47,7 +47,8 @@ class CheckCommand extends ContainerAwareCommand
             // file inside the hash folder before the code reaches it, therefore we have to check
             // the hash folder so we can finish that process here
             if($email->getStatus() == Email::STATUS_CREATING) {
-                $tempSpoolPath = $email->getPath().$email->getHash();
+                $filename = null;
+                $tempSpoolPath = $email->getPath().$email->getHash()."/";
                 // Read the temporary spool path
                 $files = scandir($tempSpoolPath, SORT_ASC);
                 if(count($files) <= 0) {
@@ -55,30 +56,36 @@ class CheckCommand extends ContainerAwareCommand
                         $this->getContainer()->get('nti.logger')->logError("Unable to find file in temporary spool...");
                     }
                 }
-                $filename = $files[0]; // SORT_ASC will guarantee .. and . are at the bottom
 
-                if($filename == "." || $filename == "..") {
-                    $filename = null; // File hasn't been created yet
+                foreach($files as $file) {
+                    if ($file == "." || $file == "..") continue;
+                    $filename = $file;
+                    break;
                 }
 
                 // Copy the file
                 try {
-                    copy($tempSpoolPath.$filename, $tempSpoolPath."/../".$filename);
-                    $email->setFilename($filename);
-                    $email->setFileContent(base64_encode(file_get_contents($tempSpoolPath."/".$filename)));
-                    $email->setStatus(Email::STATUS_QUEUE);
+                    if($filename != null) {
+                        copy($tempSpoolPath.$filename, $tempSpoolPath."../".$filename);
+                        $email->setFilename($filename);
+                        $email->setFileContent(base64_encode(file_get_contents($tempSpoolPath."/".$filename)));
+                        $email->setStatus(Email::STATUS_QUEUE);
+                        @unlink($tempSpoolPath.$filename);
+                        @rmdir($tempSpoolPath);
+
+                    }
                     continue;
                 } catch (\Exception $ex) {
                     // Log the error and proceed with the process, the check command will take care of moving
                     // the file if the $mailer->send() still hasn't created the file
-                    if($this->container->has('nti.logger')) {
-                        $this->container->get('nti.logger')->logException($ex);
-                        $this->container->get('nti.logger')->logError("An error occured copying the file $filename to the main spool folder...");
+                    if($this->getContainer()->has('nti.logger')) {
+                        $this->getContainer()->get('nti.logger')->logException($ex);
+                        $this->getContainer()->get('nti.logger')->logError("An error occurred copying the file $filename from $tempSpoolPath to the main spool folder...");
                     }
                 }
             }
 
-            // Check if it failed
+            // C1heck if it failed
             if(file_exists($spoolFolder."/".$email->getFilename().".failure")) {
                 // Attempt to reset it
                 @rename($spoolFolder."/".$email->getFilename().".failure", $spoolFolder."/".$email->getFilename());

@@ -99,7 +99,7 @@ class Mailer {
 
             // Copy the file
             try {
-                copy($tempSpoolPath.$filename, $tempSpoolPath."/../".$filename);
+                copy($tempSpoolPath.$filename, $tempSpoolPath."../".$filename);
             } catch (\Exception $ex) {
                 // Log the error and proceed with the process, the check command will take care of moving
                 // the file if the $mailer->send() still hasn't created the file
