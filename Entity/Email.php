@@ -16,6 +16,7 @@ class Email
     const STATUS_QUEUE = "Queue";
     const STATUS_SENDING = "Sending";
     const STATUS_FAILURE = "Failed";
+    const STATUS_CREATING = "Creating";
     const STATUS_SENT = "Sent";
 
     /**

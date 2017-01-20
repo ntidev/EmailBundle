@@ -43,6 +43,41 @@ class CheckCommand extends ContainerAwareCommand
                 continue;
             }
 
+            // Check if it's creating, in this case, the mailer didn't get to create the
+            // file inside the hash folder before the code reaches it, therefore we have to check
+            // the hash folder so we can finish that process here
+            if($email->getStatus() == Email::STATUS_CREATING) {
+                $tempSpoolPath = $email->getPath().$email->getHash();
+                // Read the temporary spool path
+                $files = scandir($tempSpoolPath, SORT_ASC);
+                if(count($files) <= 0) {
+                    if($this->getContainer()->has('nti.logger')){
+                        $this->getContainer()->get('nti.logger')->logError("Unable to find file in temporary spool...");
+                    }
+                }
+                $filename = $files[0]; // SORT_ASC will guarantee .. and . are at the bottom
+
+                if($filename == "." || $filename == "..") {
+                    $filename = null; // File hasn't been created yet
+                }
+
+                // Copy the file
+                try {
+                    copy($tempSpoolPath.$filename, $tempSpoolPath."/../".$filename);
+                    $email->setFilename($filename);
+                    $email->setFileContent(base64_encode(file_get_contents($tempSpoolPath."/".$filename)));
+                    $email->setStatus(Email::STATUS_QUEUE);
+                    continue;
+                } catch (\Exception $ex) {
+                    // Log the error and proceed with the process, the check command will take care of moving
+                    // the file if the $mailer->send() still hasn't created the file
+                    if($this->container->has('nti.logger')) {
+                        $this->container->get('nti.logger')->logException($ex);
+                        $this->container->get('nti.logger')->logError("An error occured copying the file $filename to the main spool folder...");
+                    }
+                }
+            }
+
             // Check if it failed
             if(file_exists($spoolFolder."/".$email->getFilename().".failure")) {
                 // Attempt to reset it

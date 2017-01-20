@@ -90,9 +90,12 @@ class Mailer {
                 if($this->container->has('nti.logger')){
                     $this->container->get('nti.logger')->logError("Unable to find file in temporary spool...");
                 }
-                return false; // No files were created...
             }
             $filename = $files[0]; // SORT_ASC will guarantee .. and . are at the bottom
+
+            if($filename == "." || $filename == "..") {
+                $filename = null; // File hasn't been created yet
+            }
 
             // Copy the file
             try {
@@ -119,7 +122,12 @@ class Mailer {
             $email->setMessageTo($recipients);
             $email->setMessageSubject($message->getSubject());
             $email->setMessageBody($message->getBody());
-            $email->setFileContent(base64_encode(file_get_contents($tempSpoolPath."/".$filename)));
+            if(!$filename == null) {
+                $email->setFileContent(base64_encode(file_get_contents($tempSpoolPath."/".$filename)));
+            } else {
+                $email->setStatus(Email::STATUS_FAILURE);
+            }
+
 
             $em->persist($email);
             $em->flush();
