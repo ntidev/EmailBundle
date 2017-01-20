@@ -94,14 +94,17 @@ class Mailer {
             }
             $filename = $files[0]; // SORT_ASC will guarantee .. and . are at the bottom
 
-            // Copy the file prior to creating the entity in case there is an exception the email can still be sent
-            if(is_dir($tempSpoolPath.$filename) || !file_exists($tempSpoolPath.$filename) || !copy($tempSpoolPath.$filename, $tempSpoolPath."/../".$filename)) {
+            // Copy the file
+            try {
+                copy($tempSpoolPath.$filename, $tempSpoolPath."/../".$filename);
+            } catch (\Exception $ex) {
+                // Log the error and proceed with the process, the check command will take care of moving
+                // the file if the $mailer->send() still hasn't created the file
                 if($this->container->has('nti.logger')) {
-                    $this->container->get('nti.logger')->logError("Unable to copy $filename to main spool folder...");
+                    $this->container->get('nti.logger')->logException($ex);
+                    $this->container->get('nti.logger')->logError("An error occured copying the file $filename to the main spool folder...");
                 }
-                return false; // Unable to copy the file...
             }
-
 
             // Save the email and delete the hash directory
             $em = $this->container->get('doctrine')->getManager();
@@ -110,6 +113,8 @@ class Mailer {
             $from = (is_array($message->getFrom())) ? join(', ', array_keys($message->getFrom())) : $message->getFrom();
             $recipients = (is_array($message->getTo())) ? join(', ', array_keys($message->getTo())) : $message->getTo();
             $email->setFilename($filename);
+            $email->setPath($this->container->getParameter('swiftmailer.spool.default.file.path')."/");
+            $email->setHash($hash);
             $email->setMessageFrom($from);
             $email->setMessageTo($recipients);
             $email->setMessageSubject($message->getSubject());

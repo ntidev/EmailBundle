@@ -30,9 +30,23 @@ class Email
     /**
      * @var string
      *
-     * @ORM\Column(name="filename", type="string", length=255)
+     * @ORM\Column(name="filename", type="string", length=255, nullable=true)
      */
     private $filename;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="hash", type="string", length=255)
+     */
+    private $hash;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="path", type="string", length=255)
+     */
+    private $path;
 
     /**
      * @var string
@@ -102,6 +116,38 @@ class Email
     public function getId()
     {
         return $this->id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    /**
+     * @param string $hash
+     */
+    public function setHash($hash)
+    {
+        $this->hash = $hash;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPath()
+    {
+        return $this->path;
+    }
+
+    /**
+     * @param string $path
+     */
+    public function setPath($path)
+    {
+        $this->path = $path;
     }
 
     /**
