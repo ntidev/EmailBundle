@@ -2,7 +2,9 @@
 
 namespace NTI\EmailBundle\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
+use NTIEmailBundle\Entity\EmailAttachment;
 
 /**
  * Email
@@ -31,30 +33,16 @@ class Email
     /**
      * @var string
      *
-     * @ORM\Column(name="filename", type="string", length=255, nullable=true)
+     * @ORM\Column(name="filename", type="string", length=255)
      */
     private $filename;
 
     /**
      * @var string
      *
-     * @ORM\Column(name="hash", type="string", length=255)
-     */
-    private $hash;
-
-    /**
-     * @var string
-     *
-     * @ORM\Column(name="path", type="string", length=255)
+     * @ORM\Column(name="path", type="text")
      */
     private $path;
-
-    /**
-     * @var string
-     *
-     * @ORM\Column(name="status", type="string", length=255)
-     */
-    private $status;
 
     /**
      * @var string
@@ -73,6 +61,20 @@ class Email
     /**
      * @var string
      *
+     * @ORM\Column(name="message_cc", type="string", length=255, nullable=true)
+     */
+    private $messageCc;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="message_bcc", type="string", length=255, nullable=true)
+     */
+    private $messageBcc;
+
+    /**
+     * @var string
+     *
      * @ORM\Column(name="message_subject", type="string", length=255)
      */
     private $messageSubject;
@@ -87,9 +89,16 @@ class Email
     /**
      * @var string
      *
-     * @ORM\Column(name="file_content", type="text")
+     * @ORM\Column(name="retry_count", type="integer", nullable=true)
      */
-    private $fileContent;
+    private $retryCount;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="status", type="string", length=255)
+     */
+    private $status;
 
     /**
      * @var \DateTime
@@ -105,6 +114,13 @@ class Email
      */
     private $lastCheck;
 
+    /**
+     * @var array
+     *
+     * @ORM\Column(name="attachments", type="array", nullable=true);
+     */
+    private $attachments;
+
     public function __construct() {
         $this->status = self::STATUS_QUEUE;
     }
@@ -119,37 +135,7 @@ class Email
         return $this->id;
     }
 
-    /**
-     * @return string
-     */
-    public function getHash()
-    {
-        return $this->hash;
-    }
 
-    /**
-     * @param string $hash
-     */
-    public function setHash($hash)
-    {
-        $this->hash = $hash;
-    }
-
-    /**
-     * @return string
-     */
-    public function getPath()
-    {
-        return $this->path;
-    }
-
-    /**
-     * @param string $path
-     */
-    public function setPath($path)
-    {
-        $this->path = $path;
-    }
 
     /**
      * Set messageFrom
@@ -295,6 +281,24 @@ class Email
     }
 
     /**
+     * @return string
+     */
+    public function getPath()
+    {
+        return $this->path;
+    }
+
+    /**
+     * @param string $path
+     * @return Email
+     */
+    public function setPath($path)
+    {
+        $this->path = $path;
+        return $this;
+    }
+
+    /**
      * Set status
      *
      * @param string $status
@@ -319,27 +323,21 @@ class Email
     }
 
     /**
-     * Set fileContent
-     *
-     * @param string $fileContent
-     *
-     * @return Email
+     * @return string
      */
-    public function setFileContent($fileContent)
+    public function getRetryCount()
     {
-        $this->fileContent = $fileContent;
-
-        return $this;
+        return $this->retryCount;
     }
 
     /**
-     * Get fileContent
-     *
-     * @return string
+     * @param string $retryCount
+     * @return Email
      */
-    public function getFileContent()
+    public function setRetryCount($retryCount)
     {
-        return $this->fileContent;
+        $this->retryCount = $retryCount;
+        return $this;
     }
 
     /**
@@ -364,5 +362,59 @@ class Email
     public function getLastCheck()
     {
         return $this->lastCheck;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMessageCc()
+    {
+        return $this->messageCc;
+    }
+
+    /**
+     * @param string $messageCc
+     * @return Email
+     */
+    public function setMessageCc($messageCc)
+    {
+        $this->messageCc = $messageCc;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMessageBcc()
+    {
+        return $this->messageBcc;
+    }
+
+    /**
+     * @param string $messageBcc
+     * @return Email
+     */
+    public function setMessageBcc($messageBcc)
+    {
+        $this->messageBcc = $messageBcc;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAttachments()
+    {
+        return $this->attachments;
+    }
+
+    /**
+     * @param array $attachments
+     * @return Email
+     */
+    public function setAttachments($attachments)
+    {
+        $this->attachments = $attachments;
+        return $this;
     }
 }
