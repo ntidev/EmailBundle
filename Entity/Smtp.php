@@ -28,7 +28,7 @@ class Smtp {
      *
      * @ORM\Column(name="host", type="string", length=255)
      *
-     * @Assert\NotBlank(message="El campo de Server / Host es obligatorio.")
+     * @Assert\NotBlank(message="The Host field is required.")
      */
     private $host;
 
@@ -37,7 +37,7 @@ class Smtp {
      *
      * @ORM\Column(name="port", type="integer")
      *
-     * @Assert\NotBlank(message="El campo de Puerto es obligatorio")
+     * @Assert\NotBlank(message="The Port field is required.")
      */
     private $port;
 
@@ -54,7 +54,7 @@ class Smtp {
      *
      * @ORM\Column(name="user", type="string", length=255)
      *
-     * @Assert\NotBlank(message="El campo de Usuario es obligatorio")
+     * @Assert\NotBlank(message="The Username field is required.")
      */
     private $user;
 
@@ -63,7 +63,7 @@ class Smtp {
      *
      * @ORM\Column(name="password", type="string", length=255)
      *
-     * @Assert\NotBlank(message="El campo de Contraseña es obligatorio")
+     * @Assert\NotBlank(message="The Password field is required.")
      */
     private $password;
 
