@@ -37,8 +37,7 @@ class Mailer {
      */
     public function sendFromTemplate($from, $to, $bcc, $subject, $template, $parameters = array(), $attachments = array()) {
         $html = $this->templating->render($template, $parameters);
-        $body = $this->embedBase64Images($message, $html);
-        return $this->sendEmail($from, $to, $cc, $bcc, $subject, $body, $attachments);
+        return $this->sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments);
     }
 
     /**
