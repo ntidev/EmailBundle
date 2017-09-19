@@ -28,6 +28,7 @@ class Mailer {
      *
      * @param $from
      * @param $to
+     * @param $cc
      * @param $bcc
      * @param $subject
      * @param $template
@@ -35,7 +36,7 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    public function sendFromTemplate($from, $to, $bcc, $subject, $template, $parameters = array(), $attachments = array()) {
+    public function sendFromTemplate($from, $to, $cc, $bcc, $subject, $template, $parameters = array(), $attachments = array()) {
         $html = $this->templating->render($template, $parameters);
         return $this->sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments);
     }
@@ -45,10 +46,10 @@ class Mailer {
      *
      * @param $from
      * @param $to
+     * @param $cc
      * @param $bcc
      * @param $subject
      * @param $html
-     * @param array $parameters
      * @param array $attachments
      * @return bool
      */
@@ -77,7 +78,7 @@ class Mailer {
     /**
      * Test the SMTP configuration
      *
-     * @param Email $email
+     * @param Smtp $smtp
      * @return $this
      */
     public function testConfiguration(Smtp $smtp) {
