@@ -27,10 +27,18 @@
     $ php app/console doctrine:schema:update
     ```
 
+### Usage
+
+
+
 ### Cronjob
 
 Schedule the following cronjob to check and send emails in the queue:
 
-    ```
-    * * * * * php app/console  /path/to/project/app/console nti:email:check
-    ```
+```
+# /etc/crontab
+# ...
+# NTIEmailBundle
+* * * * * [user] php /path/to/project/app/console nti:email:check
+
+```
