@@ -1,10 +1,36 @@
-### Use these cron jobs:
-``` 
-# Swiftmailer cronjobs
-* * * * * php /var/www/greenlink/glpartnerportal/app/console swiftmailer:spool:send --env=dev 
-* * * * * sleep 29 ; php /var/www/greenlink/glpartnerportal/app/console swiftmailer:spool:send --env=dev
+# NTIEmailBundle
 
-# NTIEmailBundle cronjobs
-* * * * * php /var/www/greenlink/glpartnerportal/app/console nti:email:check
-* * * * * sleep 29 ; php /var/www/greenlink/glpartnerportal/app/console nti:email:check
-```
+### Installation
+
+1. Install the bundle using composer:
+
+    ```
+    $ composer require ntidev/email-bundle "dev-master"
+    ```
+
+2. Add the bundle configuration to the AppKernel
+
+    ```
+    public function registerBundles()
+    {
+        $bundles = array(
+            ...
+            new NTI\EmailBundle\NTIEmailBundle(),
+            ...
+        );
+    }
+    ```
+
+3. Update the database schema
+
+    ```
+    $ php app/console doctrine:schema:update
+    ```
+
+### Cronjob
+
+Schedule the following cronjob to check and send emails in the queue:
+
+    ```
+    * * * * * php app/console  /path/to/project/app/console nti:email:check
+    ```
