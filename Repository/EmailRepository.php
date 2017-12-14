@@ -1,6 +1,7 @@
 <?php
 
 namespace NTI\EmailBundle\Repository;
+
 use NTI\EmailBundle\Entity\Email;
 
 /**
@@ -21,6 +22,7 @@ class EmailRepository extends \Doctrine\ORM\EntityRepository
     public function findEmailsToCheck($limit = 10) {
         $qb = $this->createQueryBuilder('e');
         $qb->andWhere('e.status != :sent')->setParameter("sent", Email::STATUS_SENT);
+        $qb->andWhere('e.status != :failed')->setParameter("failed", Email::STATUS_FAILURE);
         $qb->addOrderBy('e.lastCheck', 'asc');
         $qb->setMaxResults($limit);
         return $qb->getQuery()->getResult();
