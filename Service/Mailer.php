@@ -106,6 +106,175 @@ class Mailer {
 
 
     /**
+     * Checks the email spool and sees if any emails should be sent
+     *
+     * @param OutputInterface|null $output
+     * @return bool|void
+     */
+    public function check(OutputInterface $output = null) {
+
+        $em = $this->container->get('doctrine')->getManager();
+
+        /** @var Smtp $smtp */
+        $smtp = $em->getRepository('NTIEmailBundle:Smtp')->findOneBy(array("environment" => $this->container->getParameter('app_env')));
+        if (!$smtp) {
+            if ($this->container->has('nti.logger')) {
+                $this->container->get('nti.logger')->logError("Unable to find an SMTP configuration for this environment.");
+            }
+            return false;
+        }
+        $spoolFolder = $this->container->getParameter('swiftmailer.spool.default.file.path');
+        // Send Emails
+        //create an instance of the spool object pointing to the right position in the filesystem
+        $spool = new \Swift_FileSpool($spoolFolder);
+        //create a new instance of Swift_SpoolTransport that accept an argument as Swift_FileSpool
+        $transport = \Swift_SpoolTransport::newInstance($spool);
+        //now create an instance of the transport you usually use with swiftmailer
+        //to send real-time email
+        $realTransport = \Swift_SmtpTransport::newInstance(
+            $smtp->getHost(),
+            $smtp->getPort(),
+            $smtp->getEncryption()
+        )
+            ->setUsername($smtp->getUser())
+            ->setPassword($smtp->getPassword());
+        $spool = $transport->getSpool();
+        $spool->setMessageLimit(10);
+        $spool->setTimeLimit(100);
+        $sent = $spool->flushQueue($realTransport);
+        $output->writeln("Sent ".$sent." emails.");
+        // Check email statuses
+        $emails = $em->getRepository('NTIEmailBundle:Email')->findEmailsToCheck();
+        if(count($emails) <= 0) {
+            $output->writeln("No emails to check...");
+            return;
+        }
+        /** @var Email $email */
+        foreach($emails as $email) {
+            // Update last check date
+            $email->setLastCheck(new \DateTime());
+            // Check if it is sending
+            if(file_exists($spoolFolder."/".$email->getFilename().".sending")) {
+                $email->setStatus(Email::STATUS_SENDING);
+                continue;
+            }
+            // Check if it's creating, in this case, the mailer didn't get to create the
+            // file inside the hash folder before the code reaches it, therefore we have to check
+            // the hash folder so we can finish that process here
+            if($email->getStatus() == Email::STATUS_CREATING) {
+                $filename = null;
+                $tempSpoolPath = $email->getPath().$email->getHash()."/";
+                // Read the temporary spool path
+                $files = scandir($tempSpoolPath, SORT_ASC);
+                if(count($files) <= 0) {
+                    if($this->container->has('nti.logger')){
+                        $this->container->get('nti.logger')->logError("Unable to find file in temporary spool...");
+                    }
+                }
+                foreach($files as $file) {
+                    if ($file == "." || $file == "..") continue;
+                    $filename = $file;
+                    break;
+                }
+                // Copy the file
+                try {
+                    if($filename != null) {
+                        copy($tempSpoolPath.$filename, $tempSpoolPath."../".$filename);
+                        $email->setFilename($filename);
+                        $email->setFileContent(base64_encode(file_get_contents($tempSpoolPath."/".$filename)));
+                        $email->setStatus(Email::STATUS_QUEUE);
+                        @unlink($tempSpoolPath.$filename);
+                        @rmdir($tempSpoolPath);
+                    }
+                    continue;
+                } catch (\Exception $ex) {
+                    // Log the error and proceed with the process, the check command will take care of moving
+                    // the file if the $mailer->send() still hasn't created the file
+                    if($this->container->has('nti.logger')) {
+                        $this->container->get('nti.logger')->logException($ex);
+                        $this->container->get('nti.logger')->logError("An error occurred copying the file $filename from $tempSpoolPath to the main spool folder...");
+                    }
+                }
+            }
+            // C1heck if it failed
+            if(file_exists($spoolFolder."/".$email->getFilename().".failure")) {
+                // Attempt to reset it
+                @rename($spoolFolder."/".$email->getFilename().".failure", $spoolFolder."/".$email->getFilename());
+                $email->setStatus(Email::STATUS_FAILURE);
+                continue;
+            }
+            // Check if the file doesn't exists
+            if(!file_exists($spoolFolder."/".$email->getFilename())) {
+                $email->setStatus(Email::STATUS_SENT);
+                continue;
+            }
+        }
+        try {
+            $em->flush();
+            if($this->container->has('nti.logger')) {
+                $this->container->get('nti.logger')->logDebug("Finished checking ".count($emails)." emails.");
+            }
+        } catch (\Exception $ex) {
+            $output->writeln("An error occurred while checking the emails..");
+            if($this->container->has('nti.logger')) {
+                $this->container->get('nti.logger')->logException($ex);
+            }
+        }
+    }
+
+    /**
+     * @param Swift_Message $message
+     * @param $body
+     * @return mixed
+     */
+    private function embedBase64Images(\Swift_Message $message, $body)
+    {
+        // Temporary directory to save the images
+        $tempDir = $this->container->getParameter('kernel.root_dir')."/../web/tmp";
+        if(!file_exists($tempDir)) {
+            if(!mkdir($tempDir, 0777, true)) {
+                throw new FileNotFoundException("Unable to create temporary directory for images.");
+            }
+        }
+
+        $arrSrc = array();
+        if (!empty($body))
+        {
+            preg_match_all('/<img[^>]+>/i', stripcslashes($body), $imgTags);
+
+            //All img tags
+            for ($i=0; $i < count($imgTags[0]); $i++)
+            {
+                preg_match('/src="([^"]+)/i', $imgTags[0][$i], $withSrc);
+
+                //Remove src
+                $withoutSrc = str_ireplace('src="', '', $withSrc[0]);
+                $srcContent = $withoutSrc; // Save the previous content to replace with the cid
+
+                //data:image/png;base64,
+                if (strpos($withoutSrc, ";base64,"))
+                {
+                    //data:image/png;base64,.....
+                    list($type, $data) = explode(";base64,", $withoutSrc);
+                    //data:image/png
+                    list($part, $ext) = explode("/", $type);
+                    //Paste in temp file
+                    $withoutSrc = $tempDir."/".uniqid("temp_").".".$ext;
+                    @file_put_contents($withoutSrc, base64_decode($data));
+                    $cid = $message->embed((\Swift_Image::fromPath($withoutSrc)));
+                    $body = str_replace($srcContent, $cid, $body);
+                }
+
+                //Set to array
+                $arrSrc[] = $withoutSrc;
+            }
+        }
+        return $body;
+    }
+
+
+
+    /**
      * Send an email with a twig template
      *
      * @param $from
@@ -275,145 +444,5 @@ class Mailer {
         return false;
     }
 
-
-    /**
-     * Checks the email spool and sees if any emails should be sent
-     *
-     * @param OutputInterface|null $output
-     */
-    public function check(OutputInterface $output = null) {
-        $spoolFolder = $this->container->getParameter('swiftmailer.spool.default.file.path');
-        $em = $this->container->get('doctrine')->getManager();
-        $emails = $em->getRepository('NTIEmailBundle:Email')->findEmailsToCheck();
-        if(count($emails) <= 0) {
-            if($output) {
-                $output->writeln("No emails to check...");
-            }
-            return;
-        }
-        /** @var Email $email */
-        foreach($emails as $email) {
-            // Update last check date
-            $email->setLastCheck(new \DateTime());
-            // Check if it is sending
-            if(file_exists($spoolFolder."/".$email->getFilename().".sending")) {
-                $email->setStatus(Email::STATUS_SENDING);
-                continue;
-            }
-            // Check if it's creating, in this case, the mailer didn't get to create the
-            // file inside the hash folder before the code reaches it, therefore we have to check
-            // the hash folder so we can finish that process here
-            if($email->getStatus() == Email::STATUS_CREATING) {
-                $filename = null;
-                $tempSpoolPath = $email->getPath().$email->getHash()."/";
-                // Read the temporary spool path
-                $files = scandir($tempSpoolPath, SORT_ASC);
-                if(count($files) <= 0) {
-                    if($this->container->has('nti.logger')){
-                        $this->container->get('nti.logger')->logError("Unable to find file in temporary spool...");
-                    }
-                }
-                foreach($files as $file) {
-                    if ($file == "." || $file == "..") continue;
-                    $filename = $file;
-                    break;
-                }
-                // Copy the file
-                try {
-                    if($filename != null) {
-                        copy($tempSpoolPath.$filename, $tempSpoolPath."../".$filename);
-                        $email->setFilename($filename);
-                        $email->setFileContent(base64_encode(file_get_contents($tempSpoolPath."/".$filename)));
-                        $email->setStatus(Email::STATUS_QUEUE);
-                        @unlink($tempSpoolPath.$filename);
-                        @rmdir($tempSpoolPath);
-                    }
-                    continue;
-                } catch (\Exception $ex) {
-                    // Log the error and proceed with the process, the check command will take care of moving
-                    // the file if the $mailer->send() still hasn't created the file
-                    if($this->container->has('nti.logger')) {
-                        $this->container->get('nti.logger')->logException($ex);
-                        $this->container->get('nti.logger')->logError("An error occurred copying the file $filename from $tempSpoolPath to the main spool folder...");
-                    }
-                }
-            }
-            // C1heck if it failed
-            if(file_exists($spoolFolder."/".$email->getFilename().".failure")) {
-                // Attempt to reset it
-                @rename($spoolFolder."/".$email->getFilename().".failure", $spoolFolder."/".$email->getFilename());
-                $email->setStatus(Email::STATUS_FAILURE);
-                continue;
-            }
-            // Check if the file doesn't exists
-            if(!file_exists($spoolFolder."/".$email->getFilename())) {
-                $email->setStatus(Email::STATUS_SENT);
-                continue;
-            }
-        }
-        try {
-            $em->flush();
-            if($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logDebug("Finished checking ".count($emails)." emails.");
-            }
-        } catch (\Exception $ex) {
-            if($output) {
-                $output->writeln("An error occurred while checking the emails..");
-            }
-            if($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logException($ex);
-            }
-        }
-    }
-
-    /**
-     * @param Swift_Message $message
-     * @param $body
-     * @return mixed
-     */
-    private function embedBase64Images(\Swift_Message $message, $body)
-    {
-        // Temporary directory to save the images
-        $tempDir = $this->container->getParameter('kernel.root_dir')."/../web/tmp";
-        if(!file_exists($tempDir)) {
-            if(!mkdir($tempDir, 0777, true)) {
-                throw new FileNotFoundException("Unable to create temporary directory for images.");
-            }
-        }
-
-        $arrSrc = array();
-        if (!empty($body))
-        {
-            preg_match_all('/<img[^>]+>/i', stripcslashes($body), $imgTags);
-
-            //All img tags
-            for ($i=0; $i < count($imgTags[0]); $i++)
-            {
-                preg_match('/src="([^"]+)/i', $imgTags[0][$i], $withSrc);
-
-                //Remove src
-                $withoutSrc = str_ireplace('src="', '', $withSrc[0]);
-                $srcContent = $withoutSrc; // Save the previous content to replace with the cid
-
-                //data:image/png;base64,
-                if (strpos($withoutSrc, ";base64,"))
-                {
-                    //data:image/png;base64,.....
-                    list($type, $data) = explode(";base64,", $withoutSrc);
-                    //data:image/png
-                    list($part, $ext) = explode("/", $type);
-                    //Paste in temp file
-                    $withoutSrc = $tempDir."/".uniqid("temp_").".".$ext;
-                    @file_put_contents($withoutSrc, base64_decode($data));
-                    $cid = $message->embed((\Swift_Image::fromPath($withoutSrc)));
-                    $body = str_replace($srcContent, $cid, $body);
-                }
-
-                //Set to array
-                $arrSrc[] = $withoutSrc;
-            }
-        }
-        return $body;
-    }
 
 }
