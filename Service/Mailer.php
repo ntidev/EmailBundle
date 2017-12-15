@@ -2,12 +2,12 @@
 
 namespace NTI\EmailBundle\Service;
 
+use Doctrine\ORM\EntityManagerInterface;
 use NTI\EmailBundle\Entity\Email;
 use NTI\EmailBundle\Entity\Smtp;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Templating\EngineInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-
 
 class Mailer {
 
