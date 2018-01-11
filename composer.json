@@ -13,7 +13,7 @@
     "MIT"
   ],
   "require" : {
-    "symfony/swiftmailer-bundle": "^2.x"
+    "symfony/swiftmailer-bundle": "^2.0"
   },
   "autoload" : {
     "psr-0" : {
