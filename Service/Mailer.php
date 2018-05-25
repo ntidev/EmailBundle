@@ -320,7 +320,9 @@ class Mailer {
 
         if(is_array($to)) {
             foreach($to as $recipient) {
-                $message->addTo($recipient);
+                if($recipient != "") {
+                    $message->addTo($recipient);
+                }
             }
         } else {
             $message->setTo($to);
@@ -328,7 +330,9 @@ class Mailer {
 
         if(is_array($bcc)) {
             foreach($bcc as $recipient) {
-                $message->addBcc($recipient);
+                if($recipient != "") {                    
+                    $message->addBcc($recipient);
+                }
             }
         } else {
             $message->setBcc($bcc);
@@ -336,7 +340,9 @@ class Mailer {
 
         if(is_array($cc)) {
             foreach($cc as $recipient) {
-                $message->addCc($recipient);
+                if($recipient != "") {
+                    $message->addCc($recipient);
+                }
             }
         } else {
             $message->setCc($cc);
