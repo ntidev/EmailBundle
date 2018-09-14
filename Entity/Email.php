@@ -121,6 +121,7 @@ class Email
      */
     private $attachments;
 
+
     public function __construct() {
         $this->status = self::STATUS_QUEUE;
     }
@@ -417,4 +418,5 @@ class Email
         $this->attachments = $attachments;
         return $this;
     }
+
 }

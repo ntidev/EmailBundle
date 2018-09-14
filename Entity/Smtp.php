@@ -76,6 +76,20 @@ class Smtp {
     private $environment;
 
     /**
+     * @var string
+     *
+     * @ORM\Column(name="unique_id", type="string", length=255, unique=true)
+     */
+    private $uniqueId;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="spool_dir", type="string", length=255)
+     */
+    private $spoolDir;
+
+    /**
      * SMTP constructor.
      */
     public function __construct() {
@@ -216,4 +230,52 @@ class Smtp {
     }
 
 
+
+    /**
+     * Set uniqueId
+     *
+     * @param string $uniqueId
+     *
+     * @return Smtp
+     */
+    public function setUniqueId($uniqueId)
+    {
+        $this->uniqueId = $uniqueId;
+
+        return $this;
+    }
+
+    /**
+     * Get uniqueId
+     *
+     * @return string
+     */
+    public function getUniqueId()
+    {
+        return $this->uniqueId;
+    }
+
+    /**
+     * Set spoolDir
+     *
+     * @param string $spoolDir
+     *
+     * @return Smtp
+     */
+    public function setSpoolDir($spoolDir)
+    {
+        $this->spoolDir = $spoolDir;
+
+        return $this;
+    }
+
+    /**
+     * Get spoolDir
+     *
+     * @return string
+     */
+    public function getSpoolDir()
+    {
+        return $this->spoolDir;
+    }
 }

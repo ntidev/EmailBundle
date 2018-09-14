@@ -27,4 +27,22 @@ class EmailRepository extends \Doctrine\ORM\EntityRepository
         $qb->setMaxResults($limit);
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * Return the last-checked $limit emails
+     * that are not sent to get an update.
+     *
+     * @param $configName
+     * @param int $limit
+     * @return array
+     */
+    public function findEmailsToCheckByConfigName($configName, $limit = 10) {
+        $qb = $this->createQueryBuilder('e');
+        $qb->andWhere('e.status != :sent')->setParameter("sent", Email::STATUS_SENT);
+        $qb->andWhere('e.status != :failed')->setParameter("failed", Email::STATUS_FAILURE);
+        $qb->andWhere('e.messageFrom != :messageFrom')->setParameter("messageFrom", strtolower($configName));
+        $qb->addOrderBy('e.lastCheck', 'asc');
+        $qb->setMaxResults($limit);
+        return $qb->getQuery()->getResult();
+    }
 }

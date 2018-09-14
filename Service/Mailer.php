@@ -5,6 +5,7 @@ namespace NTI\EmailBundle\Service;
 use Doctrine\ORM\EntityManagerInterface;
 use NTI\EmailBundle\Entity\Email;
 use NTI\EmailBundle\Entity\Smtp;
+use Swift_FileSpool;
 use Symfony\Bundle\FrameworkBundle\Templating\EngineInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -115,17 +116,40 @@ class Mailer {
 
         $em = $this->container->get('doctrine')->getManager();
 
-        /** @var Smtp $smtp */
-        $smtp = $em->getRepository('NTIEmailBundle:Smtp')->findOneBy(array("environment" => $this->container->getParameter('app_env')));
-        if (!$smtp) {
+        $configurations = $em->getRepository('NTIEmailBundle:Smtp')->findBy(array("environment" => $this->container->getParameter('app_env')));
+        if (empty($configurations)){
             if ($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logError("Unable to find an SMTP configuration for this environment.");
+                $this->container->get('nti.logger')->logError("No SMTP configuration found for this environment.");
             }
             return false;
         }
-        $spoolFolder = $this->container->getParameter('swiftmailer.spool.default.file.path');
+
+        /** @var Smtp $smtp */
+        foreach ($configurations as $smtp){
+            $this->handleSmtpSpool($smtp, $output);
+        }
+
+    }
+
+    /**
+     * @param Smtp $smtp
+     * @param OutputInterface|null $output
+     * @return bool|void
+     * @throws \Swift_IoException
+     */
+    public function handleSmtpSpool(Smtp $smtp, OutputInterface $output = null){
+
+        if (!$smtp) {
+            return false;
+        }
+
+        $em = $this->container->get('doctrine')->getManager();
+
+        // Spool Directory
+        $spoolFolder = $smtp->getSpoolDir();
         // Send Emails
         //create an instance of the spool object pointing to the right position in the filesystem
+        /** @var Swift_FileSpool $spool */
         $spool = new \Swift_FileSpool($spoolFolder);
         //create a new instance of Swift_SpoolTransport that accept an argument as Swift_FileSpool
         $transport = \Swift_SpoolTransport::newInstance($spool);
@@ -142,11 +166,11 @@ class Mailer {
         $spool->setMessageLimit(10);
         $spool->setTimeLimit(100);
         $sent = $spool->flushQueue($realTransport);
-        $output->writeln("Sent ".$sent." emails.");
+        $output->writeln("Sent ".$sent." emails with config: {$smtp->getUniqueId()}.");
         // Check email statuses
-        $emails = $em->getRepository('NTIEmailBundle:Email')->findEmailsToCheck();
+        $emails = $em->getRepository('NTIEmailBundle:Email')->findEmailsToCheckByConfigName($smtp->getUniqueId());
         if(count($emails) <= 0) {
-            $output->writeln("No emails to check...");
+            $output->writeln("No emails to check with config: {$smtp->getUniqueId()}....");
             return;
         }
         /** @var Email $email */
@@ -196,7 +220,7 @@ class Mailer {
                     }
                 }
             }
-            // C1heck if it failed
+            // Check if it failed
             if(file_exists($spoolFolder."/".$email->getFilename().".failure")) {
                 // Attempt to reset it
                 @rename($spoolFolder."/".$email->getFilename().".failure", $spoolFolder."/".$email->getFilename());
@@ -212,10 +236,10 @@ class Mailer {
         try {
             $em->flush();
             if($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logDebug("Finished checking ".count($emails)." emails.");
+                $this->container->get('nti.logger')->logDebug("Finished checking ".count($emails)." emails with config: {$smtp->getUniqueId()}..");
             }
         } catch (\Exception $ex) {
-            $output->writeln("An error occurred while checking the emails..");
+            $output->writeln("An error occurred while checking the emails with config: {$smtp->getUniqueId()}.");
             if($this->container->has('nti.logger')) {
                 $this->container->get('nti.logger')->logException($ex);
             }
@@ -365,11 +389,11 @@ class Mailer {
             $em = $this->container->get('doctrine')->getManager();
 
             /** @var Smtp $smtp */
-            $smtp = $em->getRepository('NTIEmailBundle:Smtp')->findOneBy(array("environment" => $environment));
+            $smtp = $em->getRepository('NTIEmailBundle:Smtp')->findOneBy(array("environment" => $environment, "uniqueId" => strtolower($from)));
 
             if (!$smtp) {
                 if ($this->container->has('nti.logger')) {
-                    $this->container->get('nti.logger')->logError("Unable to find an SMTP configuration for this environment.");
+                    $this->container->get('nti.logger')->logError("Unable to find an SMTP configuration for this environment and {$from}.");
                 }
                 return false;
             }
@@ -377,7 +401,7 @@ class Mailer {
 
             // Create a new temporary spool
             $hash = md5(uniqid(time()));
-            $tempSpoolPath = $this->container->getParameter('swiftmailer.spool.default.file.path')."/".$hash."/";
+            $tempSpoolPath = $smtp->getSpoolDir()."/".$hash."/";
             $tempSpool = new \Swift_FileSpool($tempSpoolPath);
 
             /** @var \Swift_Mailer $mailer */
@@ -393,7 +417,7 @@ class Mailer {
             $files = scandir($tempSpoolPath, SORT_ASC);
             if(count($files) <= 0) {
                 if($this->container->has('nti.logger')){
-                    $this->container->get('nti.logger')->logError("Unable to find file in temporary spool...");
+                    $this->container->get('nti.logger')->logError("Unable to find file in temporary spool with config: {$smtp->getUniqueId()}...");
                 }
             }
             $filename = null;
@@ -423,7 +447,7 @@ class Mailer {
             $from = (is_array($message->getFrom())) ? join(', ', array_keys($message->getFrom())) : $message->getFrom();
             $recipients = (is_array($message->getTo())) ? join(', ', array_keys($message->getTo())) : $message->getTo();
             $email->setFilename($filename);
-            $email->setPath($this->container->getParameter('swiftmailer.spool.default.file.path')."/");
+            $email->setPath($smtp->getSpoolDir()."/");
             $email->setMessageFrom($from);
             $email->setMessageTo($recipients);
             $email->setMessageSubject($message->getSubject());
