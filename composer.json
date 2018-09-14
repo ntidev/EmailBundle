@@ -2,12 +2,17 @@
   "name" : "nti/email-bundle",
   "description" : "Symfony NTIEmailBundle",
   "type" : "symfony-bundle",
-  "authors" : [{
-    "name" : "Benjamin Vison",
-    "email" : "benjamin@syneteksolutions.com"
-  }],
+  "authors" : [
+      {
+          "name" : "Benjamin Vison",
+          "email" : "benjamin@syneteksolutions.com"
+      },{
+          "name" : "Enercido Alcantara",
+          "email" : "ealcantara@syneteksolutions.com"
+      }
+  ],
   "keywords" : [
-    "LogBundle"
+    "LogBundle", "EmailBundle"
   ],
   "license" : [
     "MIT"

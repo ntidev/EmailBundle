@@ -254,28 +254,4 @@ class Smtp {
     {
         return $this->uniqueId;
     }
-
-    /**
-     * Set spoolDir
-     *
-     * @param string $spoolDir
-     *
-     * @return Smtp
-     */
-    public function setSpoolDir($spoolDir)
-    {
-        $this->spoolDir = $spoolDir;
-
-        return $this;
-    }
-
-    /**
-     * Get spoolDir
-     *
-     * @return string
-     */
-    public function getSpoolDir()
-    {
-        return $this->spoolDir;
-    }
 }
