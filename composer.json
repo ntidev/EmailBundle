@@ -12,14 +12,11 @@
       }
   ],
   "keywords" : [
-    "LogBundle", "EmailBundle"
+    "EmailBundle"
   ],
   "license" : [
     "MIT"
   ],
-  "require" : {
-    "symfony/swiftmailer-bundle": "^2.0"
-  },
   "autoload" : {
     "psr-0" : {
       "NTI\\EmailBundle" : ""

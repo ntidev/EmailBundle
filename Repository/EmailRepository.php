@@ -40,7 +40,7 @@ class EmailRepository extends \Doctrine\ORM\EntityRepository
         $qb = $this->createQueryBuilder('e');
         $qb->andWhere('e.status != :sent')->setParameter("sent", Email::STATUS_SENT);
         $qb->andWhere('e.status != :failed')->setParameter("failed", Email::STATUS_FAILURE);
-        $qb->andWhere('e.messageFrom != :messageFrom')->setParameter("messageFrom", strtolower($configName));
+        $qb->andWhere('e.messageFrom = :messageFrom')->setParameter("messageFrom", strtolower($configName));
         $qb->addOrderBy('e.lastCheck', 'asc');
         $qb->setMaxResults($limit);
         return $qb->getQuery()->getResult();

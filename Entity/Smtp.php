@@ -70,14 +70,6 @@ class Smtp {
     /**
      * @var string
      *
-     * @ORM\Column(name="environment", type="string", length=255)
-     *
-     */
-    private $environment;
-
-    /**
-     * @var string
-     *
      * @ORM\Column(name="unique_id", type="string", length=255, unique=true)
      */
     private $uniqueId;
@@ -210,26 +202,6 @@ class Smtp {
         $this->password = $password;
         return $this;
     }
-
-    /**
-     * @return string
-     */
-    public function getEnvironment()
-    {
-        return $this->environment;
-    }
-
-    /**
-     * @param string $environment
-     * @return Smtp
-     */
-    public function setEnvironment($environment)
-    {
-        $this->environment = $environment;
-        return $this;
-    }
-
-
 
     /**
      * Set uniqueId

@@ -2,12 +2,10 @@
 
 namespace NTI\EmailBundle\Command;
 
-use NTI\EmailBundle\Entity\Email;
-use NTI\EmailBundle\Entity\Smtp;
-use Swift_Spool;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use NTI\EmailBundle\Service\Mailer;
 
 class CheckCommand extends ContainerAwareCommand
 {

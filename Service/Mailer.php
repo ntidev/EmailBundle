@@ -5,6 +5,7 @@ namespace NTI\EmailBundle\Service;
 use Doctrine\ORM\EntityManagerInterface;
 use NTI\EmailBundle\Entity\Email;
 use NTI\EmailBundle\Entity\Smtp;
+use NTI\EmailBundle\Utilities\StringUtilities;
 use Swift_FileSpool;
 use Symfony\Bundle\FrameworkBundle\Templating\EngineInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -17,10 +18,28 @@ class Mailer {
 
     /** @var EngineInterface $templating */
     private $templating;
+    
+    /** @var bool $devMode */
+    private $devMode = false;
+
+    /** @var string $devTo */
+    private $devTo;
+    /** @var string $devCc */
+    private $devCc;
+    /** @var string $devBcc */
+    private $devBcc;
 
     public function __construct(ContainerInterface $container, EngineInterface $templating) {
         $this->container = $container;
         $this->templating = $templating;
+
+        $devMode = $this->container->getParameter('nti_email.dev_mode');
+        $this->devMode = is_array($devMode) && isset($devMode["enabled"]) && $devMode["enabled"];
+        if($this->devMode) {
+            $this->devTo = $devMode["to"];
+            $this->devCc = $devMode["cc"];
+            $this->devBcc = $devMode["bcc"];
+        }
     }
 
     /**
@@ -86,21 +105,18 @@ class Mailer {
             return false;
         }
 
-        $realTransport = \Swift_SmtpTransport::newInstance(
+        $realTransport = new \Swift_SmtpTransport(
             $smtp->getHost(),
             $smtp->getPort(),
             $smtp->getEncryption()
-        )
-            ->setUsername($smtp->getUser())
-            ->setPassword($smtp->getPassword());
+        );
+        $realTransport->setUsername($smtp->getUser())->setPassword($smtp->getPassword());
 
         try {
             $realTransport->start();
             return true;
         } catch (\Exception $ex) {
-            if($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logException($ex);
-            }
+            $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, StringUtilities::BeautifyException($ex));
             return false;
         }
     }
@@ -116,14 +132,8 @@ class Mailer {
 
         $em = $this->container->get('doctrine')->getManager();
 
-        $configurations = $em->getRepository('NTIEmailBundle:Smtp')->findBy(array("environment" => $this->container->getParameter('app_env')));
-        if (empty($configurations)){
-            if ($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logError("No SMTP configuration found for this environment.");
-            }
-            return false;
-        }
-
+        $configurations = $em->getRepository('NTIEmailBundle:Smtp')->findAll();
+        
         /** @var Smtp $smtp */
         foreach ($configurations as $smtp){
             $this->handleSmtpSpool($smtp, $output);
@@ -139,10 +149,6 @@ class Mailer {
      */
     public function handleSmtpSpool(Smtp $smtp, OutputInterface $output = null){
 
-        if (!$smtp) {
-            return false;
-        }
-
         $em = $this->container->get('doctrine')->getManager();
 
         // Spool Directory
@@ -152,23 +158,23 @@ class Mailer {
         /** @var Swift_FileSpool $spool */
         $spool = new \Swift_FileSpool($spoolFolder);
         //create a new instance of Swift_SpoolTransport that accept an argument as Swift_FileSpool
-        $transport = \Swift_SpoolTransport::newInstance($spool);
+        $transport = new \Swift_SpoolTransport($spool);
         //now create an instance of the transport you usually use with swiftmailer
         //to send real-time email
-        $realTransport = \Swift_SmtpTransport::newInstance(
+        $realTransport = new \Swift_SmtpTransport(
             $smtp->getHost(),
             $smtp->getPort(),
             $smtp->getEncryption()
-        )
-            ->setUsername($smtp->getUser())
-            ->setPassword($smtp->getPassword());
+        );
+        $realTransport->setUsername($smtp->getUser())->setPassword($smtp->getPassword());
         $spool = $transport->getSpool();
         $spool->setMessageLimit(10);
         $spool->setTimeLimit(100);
         $sent = $spool->flushQueue($realTransport);
         $output->writeln("Sent ".$sent." emails with config: {$smtp->getUniqueId()}.");
+
         // Check email statuses
-        $emails = $em->getRepository('NTIEmailBundle:Email')->findEmailsToCheckByConfigName($smtp->getUniqueId());
+        $emails = $em->getRepository(Email::class)->findEmailsToCheckByConfigName($smtp->getUniqueId());
         if(count($emails) <= 0) {
             $output->writeln("No emails to check with config: {$smtp->getUniqueId()}....");
             return;
@@ -189,12 +195,7 @@ class Mailer {
                 $filename = null;
                 $tempSpoolPath = $email->getPath().$email->getHash()."/";
                 // Read the temporary spool path
-                $files = scandir($tempSpoolPath, SORT_ASC);
-                if(count($files) <= 0) {
-                    if($this->container->has('nti.logger')){
-                        $this->container->get('nti.logger')->logError("Unable to find file in temporary spool...");
-                    }
-                }
+                $files = scandir($tempSpoolPath, SORT_ASC);                
                 foreach($files as $file) {
                     if ($file == "." || $file == "..") continue;
                     $filename = $file;
@@ -212,12 +213,7 @@ class Mailer {
                     }
                     continue;
                 } catch (\Exception $ex) {
-                    // Log the error and proceed with the process, the check command will take care of moving
-                    // the file if the $mailer->send() still hasn't created the file
-                    if($this->container->has('nti.logger')) {
-                        $this->container->get('nti.logger')->logException($ex);
-                        $this->container->get('nti.logger')->logError("An error occurred copying the file $filename from $tempSpoolPath to the main spool folder...");
-                    }
+                    $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, StringUtilities::BeautifyException($ex));
                 }
             }
             // Check if it failed
@@ -234,15 +230,9 @@ class Mailer {
             }
         }
         try {
-            $em->flush();
-            if($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logDebug("Finished checking ".count($emails)." emails with config: {$smtp->getUniqueId()}..");
-            }
+            $em->flush();            
         } catch (\Exception $ex) {
-            $output->writeln("An error occurred while checking the emails with config: {$smtp->getUniqueId()}.");
-            if($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logException($ex);
-            }
+            $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, StringUtilities::BeautifyException($ex));
         }
     }
 
@@ -254,12 +244,7 @@ class Mailer {
     private function embedBase64Images(\Swift_Message $message, $body)
     {
         // Temporary directory to save the images
-        $tempDir = $this->container->getParameter('kernel.root_dir')."/../web/tmp";
-        if(!file_exists($tempDir)) {
-            if(!mkdir($tempDir, 0777, true)) {
-                throw new FileNotFoundException("Unable to create temporary directory for images.");
-            }
-        }
+        $tempDir = "/tmp";
 
         $arrSrc = array();
         if (!empty($body))
@@ -312,35 +297,22 @@ class Mailer {
      */
     private function processEmail($from, $to, $cc = array(), $bcc = array(), $subject, $html = "", $attachments = array()) {
 
-        // If is a test environment prepend TEST - to the subject
-        $environment =  $this->container->getParameter('environment');
-
-        if($environment == "dev") {
-            $to = ($this->container->hasParameter('development_recipients')) ? $this->container->getParameter('development_recipients') : $to;
-            $cc = ($this->container->hasParameter('development_recipients')) ? array() : $cc;
-            $bcc = ($this->container->hasParameter('development_recipients')) ? array() : $bcc;
-        }
-
-        if($this->container->hasParameter('environment') && $environment == "test") {
+        if($this->devMode) {
+            $to = $this->devTo;
+            $cc = $this->devCc;
+            $bcc = $this->devBcc;
             $subject = "TEST - ".$subject;
         }
 
         /** @var Swift_Message $message */
-
-        $message = \Swift_Message::newInstance("sendmail -bs")
-            ->setSubject($subject)
-            ->setFrom($from);
+        $message = new \Swift_Message($subject);
+        $message->setFrom($from);
 
         $body = $this->embedBase64Images($message, $html);
 
         $message->setBody($body, 'text/html');
 
         $message->setContentType("text/html");
-
-        // Check if we are in development
-        if($this->container->hasParameter('environment') && $this->container->getParameter('environment') == "dev") {
-            $to = $this->container->hasParameter('event_development_email')  ? $this->container->getParameter('event_development_email') : $to;
-        }
 
         if(is_array($to)) {
             foreach($to as $recipient) {
@@ -389,12 +361,12 @@ class Mailer {
             $em = $this->container->get('doctrine')->getManager();
 
             /** @var Smtp $smtp */
-            $smtp = $em->getRepository('NTIEmailBundle:Smtp')->findOneBy(array("environment" => $environment, "uniqueId" => strtolower($from)));
+            $uniqueId = (is_array($from) && count($from) > 0) ? $from[0] : $from;
+            $smtp = $em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
 
             if (!$smtp) {
-                if ($this->container->has('nti.logger')) {
-                    $this->container->get('nti.logger')->logError("Unable to find an SMTP configuration for this environment and {$from}.");
-                }
+                $this->container->get('logger')->log(\Monolog\Logger::WARNING, "Unable to find an SMTP configuration with the UniqueID of {$from}");
+
                 return false;
             }
 
@@ -405,7 +377,7 @@ class Mailer {
             $tempSpool = new \Swift_FileSpool($tempSpoolPath);
 
             /** @var \Swift_Mailer $mailer */
-            $mailer = \Swift_Mailer::newInstance(\Swift_SpoolTransport::newInstance($tempSpool));
+            $mailer = new \Swift_Mailer(new \Swift_SpoolTransport($tempSpool));
 
             $transport = $mailer->getTransport();
             $transport->setSpool($tempSpool);
@@ -429,17 +401,15 @@ class Mailer {
             }
 
             // Copy the file
-            try {
-                copy($tempSpoolPath.$filename, $tempSpoolPath."../".$filename);
-            } catch (\Exception $ex) {
-                // Log the error and proceed with the process, the check command will take care of moving
-                // the file if the $mailer->send() still hasn't created the file
-                if($this->container->has('nti.logger')) {
-                    $this->container->get('nti.logger')->logException($ex);
-                    $this->container->get('nti.logger')->logError("An error occured copying the file $filename to the main spool folder...");
+            if($filename != null) {
+                try {
+                    copy($tempSpoolPath.$filename, $tempSpoolPath."../".$filename);
+                } catch (\Exception $ex) {
+                    $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, StringUtilities::BeautifyException($ex));
                 }
+    
             }
-
+            
             // Save the email and delete the hash directory
             $em = $this->container->get('doctrine')->getManager();
             $email = new Email();
@@ -449,6 +419,8 @@ class Mailer {
             $email->setFilename($filename);
             $email->setPath($smtp->getSpoolDir()."/");
             $email->setMessageFrom($from);
+            $email->setMessageCc($cc);
+            $email->setMessageBcc($bcc);
             $email->setMessageTo($recipients);
             $email->setMessageSubject($message->getSubject());
             $email->setMessageBody($message->getBody());
@@ -466,13 +438,8 @@ class Mailer {
             return true;
 
         } catch (\Exception $ex) {
-            if($this->container->has('nti.logger')) {
-                $this->container->get('nti.logger')->logException($ex);
-                $this->container->get('nti.logger')->logError("An error occurred sending an email, see above exception for more");
-            }
+            $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, StringUtilities::BeautifyException($ex));
         }
         return false;
     }
-
-
 }
