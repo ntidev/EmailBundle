@@ -19,6 +19,14 @@ class Configuration implements ConfigurationInterface
     {
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('nti_email');
+        $rootNode
+            ->children()
+            ->arrayNode("dev_mode")                
+                ->children()
+                    ->scalarNode("enabled")->defaultTrue()->end()
+                    ->scalarNode("recipient")->defaultValue("")->end()
+                ->end()
+            ->end();
 
         // Here you should define the parameters that are allowed to
         // configure your bundle. See the documentation linked above for
