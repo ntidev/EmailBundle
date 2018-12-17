@@ -20,8 +20,7 @@ class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('nti_email');
         $rootNode
-            ->children()
-            ->scalarNode("spool_dir")->defaultValue("/tmp")->end()
+            ->children()            
             ->arrayNode("dev_mode")
                 ->children()
                     ->scalarNode("enabled")->defaultTrue()->end()
