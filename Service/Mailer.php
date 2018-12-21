@@ -316,31 +316,34 @@ class Mailer {
 
         if(is_array($to)) {
             foreach($to as $recipient) {
-                if($recipient != "") {
+                if($recipient != "" && filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
                     $message->addTo($recipient);
                 }
             }
-        } else {
+        } elseif($to != "" && filter_var($to, FILTER_VALIDATE_EMAIL)) {
             $message->setTo($to);
+        } else {
+            $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, "Invalid recipient: ".json_encode($to));
+            return false;
         }
 
         if(is_array($bcc)) {
             foreach($bcc as $recipient) {
-                if($recipient != "") {                    
+                if($recipient != "" && filter_var($recipient, FILTER_VALIDATE_EMAIL)) {                    
                     $message->addBcc($recipient);
                 }
             }
-        } else {
+        } elseif($bcc != "" && filter_var($bcc, FILTER_VALIDATE_EMAIL)) {
             $message->setBcc($bcc);
         }
 
         if(is_array($cc)) {
             foreach($cc as $recipient) {
-                if($recipient != "") {
+                if($recipient != "" && filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
                     $message->addCc($recipient);
                 }
             }
-        } else {
+        } elseif($cc != "" && filter_var($cc, FILTER_VALIDATE_EMAIL)) {
             $message->setCc($cc);
         }
 
@@ -366,7 +369,6 @@ class Mailer {
 
             if (!$smtp) {
                 $this->container->get('logger')->log(\Monolog\Logger::WARNING, "Unable to find an SMTP configuration with the UniqueID of {$from}");
-
                 return false;
             }
 
