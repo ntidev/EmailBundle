@@ -34,7 +34,7 @@ class Mailer {
         $this->templating = $templating;
 
         $devMode = $this->container->getParameter('nti_email.dev_mode');
-        $this->devMode = is_array($devMode) && isset($devMode["enabled"]) && $devMode["enabled"] === true;
+        $this->devMode = is_array($devMode) && isset($devMode["enabled"]) && $devMode["enabled"] == "true";
         if($this->devMode) {
             $this->devTo = $devMode["to"];
             $this->devCc = $devMode["cc"];
