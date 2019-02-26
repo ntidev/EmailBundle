@@ -416,11 +416,14 @@ class Mailer {
 
             $from = (is_array($message->getFrom())) ? join(', ', array_keys($message->getFrom())) : $message->getFrom();
             $recipients = (is_array($message->getTo())) ? join(', ', array_keys($message->getTo())) : $message->getTo();
+            $ccRecipients = (is_array($message->getCc())) ? join(', ', array_keys($message->getCc())) : $message->getCc();
+            $bccRecipients = (is_array($message->getBcc())) ? join(', ', array_keys($message->getBcc())) : $message->getBcc();
+            
             $email->setFilename($filename);
             $email->setPath($smtp->getSpoolDir()."/");
             $email->setMessageFrom($from);
-            $email->setMessageCc($cc);
-            $email->setMessageBcc($bcc);
+            $email->setMessageCc($ccRecipients);
+            $email->setMessageBcc($bccRecipients);
             $email->setMessageTo($recipients);
             $email->setMessageSubject($message->getSubject());
             $email->setMessageBody($message->getBody());
