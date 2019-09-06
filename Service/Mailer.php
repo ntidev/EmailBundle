@@ -55,9 +55,9 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    public function sendFromTemplate($from, $to, $cc, $bcc, $subject, $template, $parameters = array(), $attachments = array()) {
+    public function sendFromTemplate($from, $to, $cc, $bcc, $subject, $template, $parameters = array(), $attachments = array(), $smtp = null) {
         $html = $this->templating->render($template, $parameters);
-        return $this->sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments);
+        return $this->sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments, $smtp);
     }
 
     /**
@@ -72,8 +72,8 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    public function sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments = array()) {
-        return $this->processEmail($from, $to, $cc, $bcc, $subject, $html, $attachments);
+    public function sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments = array(), $smtp = null) {
+        return $this->processEmail($from, $to, $cc, $bcc, $subject, $html, $attachments, $smtp);
     }
 
     /**
@@ -295,7 +295,7 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    private function processEmail($from, $to, $cc = array(), $bcc = array(), $subject, $html = "", $attachments = array()) {
+    private function processEmail($from, $to, $cc = array(), $bcc = array(), $subject, $html = "", $attachments = array(), $smtp = null) {
 
         if($this->devMode) {
             $to = $this->devTo;
@@ -364,8 +364,10 @@ class Mailer {
             $em = $this->container->get('doctrine')->getManager();
 
             /** @var Smtp $smtp */
-            $uniqueId = (is_array($from) && count($from) > 0) ? $from[0] : $from;
-            $smtp = $em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
+            $uniqueId = (is_array($from) && count($from) > 0) ? key($from) : $from;
+            if(!$smtp) {
+                $smtp = $em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
+            }
 
             if (!$smtp) {
                 $this->container->get('logger')->log(\Monolog\Logger::WARNING, "Unable to find an SMTP configuration with the UniqueID of {$from}");
