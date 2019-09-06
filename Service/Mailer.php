@@ -72,8 +72,8 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    public function sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments = array()) {
-        return $this->processEmail($from, $to, $cc, $bcc, $subject, $html, $attachments);
+    public function sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments = array(), $userLogged = array()) {
+        return $this->processEmail($from, $to, $cc, $bcc, $subject, $html, $attachments, $userLogged);
     }
 
     /**
@@ -295,7 +295,7 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    private function processEmail($from, $to, $cc = array(), $bcc = array(), $subject, $html = "", $attachments = array()) {
+    private function processEmail($from, $to, $cc = array(), $bcc = array(), $subject, $html = "", $attachments = array(), $userLogged = []) {
 
         if($this->devMode) {
             $to = $this->devTo;
@@ -306,7 +306,12 @@ class Mailer {
 
         /** @var Swift_Message $message */
         $message = new \Swift_Message($subject);
-        $message->setFrom($from);
+        
+        if($userLogged){
+            $message->setFrom($userLogged);
+        } else {
+            $message->setFrom($from);
+        }
 
         $body = $this->embedBase64Images($message, $html);
 
@@ -364,7 +369,7 @@ class Mailer {
             $em = $this->container->get('doctrine')->getManager();
 
             /** @var Smtp $smtp */
-            $uniqueId = (is_array($from) && count($from) > 0) ? $from[0] : $from;
+            $uniqueId = (is_array($from) && count($from) > 0) ? key($from) : $from;
             $smtp = $em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
 
             if (!$smtp) {
