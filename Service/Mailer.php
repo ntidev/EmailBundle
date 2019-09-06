@@ -55,9 +55,9 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    public function sendFromTemplate($from, $to, $cc, $bcc, $subject, $template, $parameters = array(), $attachments = array()) {
+    public function sendFromTemplate($from, $to, $cc, $bcc, $subject, $template, $parameters = array(), $attachments = array(), $smtp = null) {
         $html = $this->templating->render($template, $parameters);
-        return $this->sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments);
+        return $this->sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments, $smtp);
     }
 
     /**
@@ -72,8 +72,8 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    public function sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments = array(), $userLogged = array()) {
-        return $this->processEmail($from, $to, $cc, $bcc, $subject, $html, $attachments, $userLogged);
+    public function sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments = array(), $smtp = null) {
+        return $this->processEmail($from, $to, $cc, $bcc, $subject, $html, $attachments, $smtp);
     }
 
     /**
@@ -295,7 +295,7 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    private function processEmail($from, $to, $cc = array(), $bcc = array(), $subject, $html = "", $attachments = array(), $userLogged = []) {
+    private function processEmail($from, $to, $cc = array(), $bcc = array(), $subject, $html = "", $attachments = array(), $smtp = null) {
 
         if($this->devMode) {
             $to = $this->devTo;
@@ -306,12 +306,7 @@ class Mailer {
 
         /** @var Swift_Message $message */
         $message = new \Swift_Message($subject);
-        
-        if($userLogged){
-            $message->setFrom($userLogged);
-        } else {
-            $message->setFrom($from);
-        }
+        $message->setFrom($from);
 
         $body = $this->embedBase64Images($message, $html);
 
@@ -370,7 +365,9 @@ class Mailer {
 
             /** @var Smtp $smtp */
             $uniqueId = (is_array($from) && count($from) > 0) ? key($from) : $from;
-            $smtp = $em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
+            if(!$smtp) {
+                $smtp = $em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
+            }
 
             if (!$smtp) {
                 $this->container->get('logger')->log(\Monolog\Logger::WARNING, "Unable to find an SMTP configuration with the UniqueID of {$from}");
