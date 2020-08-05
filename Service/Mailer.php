@@ -7,16 +7,16 @@ use NTI\EmailBundle\Entity\Email;
 use NTI\EmailBundle\Entity\Smtp;
 use NTI\EmailBundle\Utilities\StringUtilities;
 use Swift_FileSpool;
-use Symfony\Bundle\FrameworkBundle\Templating\EngineInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Twig\Environment;
 
 class Mailer {
 
     /** @var ContainerInterface $container */
     private $container;
 
-    /** @var EngineInterface $templating */
+    /** @var Environment $templating */
     private $templating;
     
     /** @var bool $devMode */
@@ -29,7 +29,7 @@ class Mailer {
     /** @var string $devBcc */
     private $devBcc;
 
-    public function __construct(ContainerInterface $container, EngineInterface $templating) {
+    public function __construct(ContainerInterface $container, Environment $templating) {
         $this->container = $container;
         $this->templating = $templating;
 
@@ -55,9 +55,9 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    public function sendFromTemplate($from, $to, $cc, $bcc, $subject, $template, $parameters = array(), $attachments = array(), $smtp = null) {
+    public function sendFromTemplate($from, $to, $cc, $bcc, $subject, $template, $parameters = array(), $attachments = array()) {
         $html = $this->templating->render($template, $parameters);
-        return $this->sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments, $smtp);
+        return $this->sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments);
     }
 
     /**
@@ -72,8 +72,8 @@ class Mailer {
      * @param array $attachments
      * @return bool
      */
-    public function sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments = array(), $smtp = null) {
-        return $this->processEmail($from, $to, $cc, $bcc, $subject, $html, $attachments, $smtp);
+    public function sendEmail($from, $to, $cc, $bcc, $subject, $html, $attachments = array()) {
+        return $this->processEmail($from, $to, $cc, $bcc, $subject, $html, $attachments);
     }
 
     /**
@@ -367,7 +367,6 @@ class Mailer {
             $uniqueId = (is_array($from) && count($from) > 0) ? key($from) : $from;
             if(!$smtp) {
                 $smtp = $em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
-            }
 
             if (!$smtp) {
                 $this->container->get('logger')->log(\Monolog\Logger::WARNING, "Unable to find an SMTP configuration with the UniqueID of {$from}");
@@ -420,14 +419,11 @@ class Mailer {
 
             $from = (is_array($message->getFrom())) ? join(', ', array_keys($message->getFrom())) : $message->getFrom();
             $recipients = (is_array($message->getTo())) ? join(', ', array_keys($message->getTo())) : $message->getTo();
-            $ccRecipients = (is_array($message->getCc())) ? join(', ', array_keys($message->getCc())) : $message->getCc();
-            $bccRecipients = (is_array($message->getBcc())) ? join(', ', array_keys($message->getBcc())) : $message->getBcc();
-            
             $email->setFilename($filename);
             $email->setPath($smtp->getSpoolDir()."/");
             $email->setMessageFrom($from);
-            $email->setMessageCc($ccRecipients);
-            $email->setMessageBcc($bccRecipients);
+            $email->setMessageCc($cc);
+            $email->setMessageBcc($bcc);
             $email->setMessageTo($recipients);
             $email->setMessageSubject($message->getSubject());
             $email->setMessageBody($message->getBody());
