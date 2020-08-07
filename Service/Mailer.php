@@ -304,6 +304,11 @@ class Mailer {
             $subject = "TEST - ".$subject;
         }
 
+        if(!$to && !$cc && !$bcc) {
+            $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, "At least one email is required");
+            return false;
+        }
+        
         /** @var Swift_Message $message */
         $message = new \Swift_Message($subject);
         $message->setFrom($from);
@@ -322,9 +327,6 @@ class Mailer {
             }
         } elseif($to != "" && filter_var($to, FILTER_VALIDATE_EMAIL)) {
             $message->setTo($to);
-        } else {
-            $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, "Invalid recipient: ".json_encode($to));
-            return false;
         }
 
         if(is_array($bcc)) {
