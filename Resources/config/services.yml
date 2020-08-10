@@ -1,10 +1,14 @@
 services:
     nti.mailer:
         class: NTI\EmailBundle\Service\Mailer
-        arguments: ["@service_container", "@templating"]
+        arguments: ["@service_container", "@twig"]
+        public: true
     nti.form.smtptype:
         class: NTI\EmailBundle\Form\SmtpType
         arguments: ["@doctrine.orm.entity_manager"]
+        public: true
         tags:
             - { name: form.type }
-
+    NTI\EmailBundle\Command\:
+        resource: '../../Command/*'
+        tags: ['console.command']

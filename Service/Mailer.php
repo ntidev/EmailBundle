@@ -7,16 +7,16 @@ use NTI\EmailBundle\Entity\Email;
 use NTI\EmailBundle\Entity\Smtp;
 use NTI\EmailBundle\Utilities\StringUtilities;
 use Swift_FileSpool;
-use Symfony\Bundle\FrameworkBundle\Templating\EngineInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Twig\Environment;
 
 class Mailer {
 
     /** @var ContainerInterface $container */
     private $container;
 
-    /** @var EngineInterface $templating */
+    /** @var Environment $templating */
     private $templating;
     
     /** @var bool $devMode */
@@ -29,7 +29,7 @@ class Mailer {
     /** @var string $devBcc */
     private $devBcc;
 
-    public function __construct(ContainerInterface $container, EngineInterface $templating) {
+    public function __construct(ContainerInterface $container, Environment $templating) {
         $this->container = $container;
         $this->templating = $templating;
 
@@ -304,6 +304,11 @@ class Mailer {
             $subject = "TEST - ".$subject;
         }
 
+        if(!$to && !$cc && !$bcc) {
+            $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, "At least one email is required");
+            return false;
+        }
+        
         /** @var Swift_Message $message */
         $message = new \Swift_Message($subject);
         $message->setFrom($from);
@@ -322,9 +327,6 @@ class Mailer {
             }
         } elseif($to != "" && filter_var($to, FILTER_VALIDATE_EMAIL)) {
             $message->setTo($to);
-        } else {
-            $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, "Invalid recipient: ".json_encode($to));
-            return false;
         }
 
         if(is_array($bcc)) {

@@ -54,7 +54,7 @@ class Email
     /**
      * @var string
      *
-     * @ORM\Column(name="message_to", type="string", length=255)
+     * @ORM\Column(name="message_to", type="string", length=255, nullable=true)
      */
     private $messageTo;
 
