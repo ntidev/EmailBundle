@@ -18,7 +18,7 @@ class Mailer {
 
     /** @var Environment $templating */
     private $templating;
-    
+
     /** @var bool $devMode */
     private $devMode = false;
 
@@ -132,8 +132,8 @@ class Mailer {
 
         $em = $this->container->get('doctrine')->getManager();
 
-        $configurations = $em->getRepository('NTIEmailBundle:Smtp')->findAll();
-        
+        $configurations = $em->getRepository(Smtp::class)->findAll();
+
         /** @var Smtp $smtp */
         foreach ($configurations as $smtp){
             $this->handleSmtpSpool($smtp, $output);
@@ -195,7 +195,7 @@ class Mailer {
                 $filename = null;
                 $tempSpoolPath = $email->getPath().$email->getHash()."/";
                 // Read the temporary spool path
-                $files = scandir($tempSpoolPath, SORT_ASC);                
+                $files = scandir($tempSpoolPath, SORT_ASC);
                 foreach($files as $file) {
                     if ($file == "." || $file == "..") continue;
                     $filename = $file;
@@ -230,7 +230,7 @@ class Mailer {
             }
         }
         try {
-            $em->flush();            
+            $em->flush();
         } catch (\Exception $ex) {
             $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, StringUtilities::BeautifyException($ex));
         }
@@ -308,7 +308,7 @@ class Mailer {
             $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, "At least one email is required");
             return false;
         }
-        
+
         /** @var Swift_Message $message */
         $message = new \Swift_Message($subject);
         $message->setFrom($from);
@@ -331,7 +331,7 @@ class Mailer {
 
         if(is_array($bcc)) {
             foreach($bcc as $recipient) {
-                if($recipient != "" && filter_var($recipient, FILTER_VALIDATE_EMAIL)) {                    
+                if($recipient != "" && filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
                     $message->addBcc($recipient);
                 }
             }
@@ -413,9 +413,9 @@ class Mailer {
                 } catch (\Exception $ex) {
                     $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, StringUtilities::BeautifyException($ex));
                 }
-    
+
             }
-            
+
             // Save the email and delete the hash directory
             $em = $this->container->get('doctrine')->getManager();
             $email = new Email();
@@ -424,7 +424,7 @@ class Mailer {
             $recipients = (is_array($message->getTo())) ? join(', ', array_keys($message->getTo())) : $message->getTo();
             $ccRecipients = (is_array($message->getCc())) ? join(', ', array_keys($message->getCc())) : $message->getCc();
             $bccRecipients = (is_array($message->getBcc())) ? join(', ', array_keys($message->getBcc())) : $message->getBcc();
-            
+
             $email->setFilename($filename);
             $email->setPath($smtp->getSpoolDir()."/");
             $email->setMessageFrom($from);
