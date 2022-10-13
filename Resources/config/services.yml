@@ -1,14 +1,22 @@
 services:
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
     nti.mailer:
         class: NTI\EmailBundle\Service\Mailer
-        arguments: ["@service_container", "@twig"]
+        arguments: ["@service_container", "@twig", "@doctrine.orm.entity_manager"]
         public: true
+        autowire: true
     nti.form.smtptype:
         class: NTI\EmailBundle\Form\SmtpType
         arguments: ["@doctrine.orm.entity_manager"]
         public: true
         tags:
             - { name: form.type }
+        autowire: true
     NTI\EmailBundle\Command\:
         resource: '../../Command/*'
         tags: ['console.command']
+    NTI\EmailBundle\Repository\:
+       resource: '../../Repository/*' 
+       autowire: true

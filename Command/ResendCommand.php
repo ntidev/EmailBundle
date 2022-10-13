@@ -3,16 +3,37 @@
 namespace NTI\EmailBundle\Command;
 
 use NTI\EmailBundle\Entity\Email;
+use NTI\EmailBundle\Repository\EmailRepository;
 use NTI\EmailBundle\Entity\Smtp;
 use Swift_Spool;
-use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
-class ResendCommand extends ContainerAwareCommand
+class ResendCommand extends Command
 {
+    private $container;
+
+    /** @var EntityManager */
+    private $em;
+
+    /** @var EmailRepository */
+    private $emailRepository;
+
+    public function __construct(ContainerInterface $container, EntityManagerInterface $em, EmailRepository $emailRepository)
+    {
+        $this->container = $container;
+        $this->em = $em;
+        $this->emailRepository = $emailRepository;
+
+        parent::__construct();
+    }
+
+
     protected function configure()
     {
         $this
@@ -24,22 +45,27 @@ class ResendCommand extends ContainerAwareCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $id = $input->getArgument("emailId");
-        if(!$id) {
-            $output->writeln("<error>The Email ID is required.</error>");
-            return;
-        }
+        try{
 
-        $em = $this->getContainer()->get('doctrine')->getManager();
-        $email = $em->getRepository('NTIEmailBundle:Email')->find($id);
-        if(!$email) {
-            $output->writeln("<error>The Email was not found.</error>");
-            return;
-        }
+        	$id = $input->getArgument("emailId");
+        	if(!$id) {
+            		$output->writeln("<error>The Email ID is required.</error>");
+            		return;
+        	}
 
-        $smtpService = $this->getContainer()->get('nti.mailer');
+        	$email = $this->emailRepository->find($id);
+        	if(!$email) {
+            		$output->writeln("<error>The Email was not found.</error>");
+            		return;
+        	}
 
-        $smtpService->resend($email);
-        $output->writeln("<success>The Email was moved to the queue.</success>");
+        	$smtpService = $this->container->get('nti.mailer');
+
+        	$smtpService->resend($email);
+        	$output->writeln("<success>The Email was moved to the queue.</success>");
+		return 0;
+	} catch(\Exception $e){
+		return 1;
+	}
     }
 }

@@ -29,9 +29,13 @@ class Mailer {
     /** @var string $devBcc */
     private $devBcc;
 
-    public function __construct(ContainerInterface $container, Environment $templating) {
+    /** @var EntityManager */
+    private $em;
+
+    public function __construct(ContainerInterface $container, Environment $templating, EntityManagerInterface $em) {
         $this->container = $container;
         $this->templating = $templating;
+        $this->em = $em;
 
         $devMode = $this->container->getParameter('nti_email.dev_mode');
         $this->devMode = is_array($devMode) && isset($devMode["enabled"]) && $devMode["enabled"] == "true";
@@ -130,9 +134,8 @@ class Mailer {
      */
     public function check(OutputInterface $output = null) {
 
-        $em = $this->container->get('doctrine')->getManager();
 
-        $configurations = $em->getRepository(Smtp::class)->findAll();
+        $configurations = $this->em->getRepository(Smtp::class)->findAll();
 
         /** @var Smtp $smtp */
         foreach ($configurations as $smtp){
@@ -174,7 +177,7 @@ class Mailer {
         $output->writeln("Sent ".$sent." emails with config: {$smtp->getUniqueId()}.");
 
         // Check email statuses
-        $emails = $em->getRepository(Email::class)->findEmailsToCheckByConfigName($smtp->getUniqueId());
+        $emails = $this->em->getRepository(Email::class)->findEmailsToCheckByConfigName($smtp->getUniqueId());
         if(count($emails) <= 0) {
             $output->writeln("No emails to check with config: {$smtp->getUniqueId()}....");
             return;
@@ -230,7 +233,7 @@ class Mailer {
             }
         }
         try {
-            $em->flush();
+            $this->em->flush();
         } catch (\Exception $ex) {
             $this->container->get('logger')->log(\Monolog\Logger::CRITICAL, StringUtilities::BeautifyException($ex));
         }
@@ -368,7 +371,7 @@ class Mailer {
             /** @var Smtp $smtp */
             $uniqueId = (is_array($from) && count($from) > 0) ? key($from) : $from;
             if(!$smtp) {
-                $smtp = $em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
+                $smtp = $this->em->getRepository(Smtp::class)->findOneBy(array("uniqueId" => strtolower($uniqueId)));
             }
 
             if (!$smtp) {
@@ -438,8 +441,8 @@ class Mailer {
                 $email->setStatus(Email::STATUS_FAILURE);
             }
 
-            $em->persist($email);
-            $em->flush();
+            $this->em->persist($email);
+            $this->em->flush();
 
             @unlink($tempSpoolPath."/".$filename);
             @rmdir($tempSpoolPath);
